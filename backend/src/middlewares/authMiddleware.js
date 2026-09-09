@@ -2,7 +2,7 @@ const jwt=require('jsonwebtoken')
 require('dotenv').config()
 
 const auth=async (req,res,next)=>{
-    const header=req.headers['Authorization']
+    const header=req.headers.authorization
     if(!header || !header.startsWith("Bearer"))
         return res.status(401).json({"msg":"Invalid token"})
     const token=header.split(' ')[1]
