@@ -35,7 +35,7 @@ const getComplaintById = async (req,res,next)=>{
         if(complaint){
             return res.status(200).json({"msg":"complaint data fetched success",data:JSON.parse(complaint),"source":"redis"})
         }
-        const result = await pool.query("select  * from branch_complaints where complaint_id=$1",[complaint_id])
+        const result = await pool.query("select  * from complaints_view where complaint_id=$1",[complaint_id])
         if(result.rows.length==0)
             return next({"msg":"complaint not found","status":404})
         await redis.set(`complaints:${complaint_id}`,JSON.stringify(result.rows[0]),"EX",600)
@@ -85,7 +85,9 @@ const updateComplaint = async (req,res,next)=>{
         }
         if(count==1)return next({"status":200,"msg":"complaint_updated"})
         let query=queries.join(', ')
-        const result=await pool.query(`update complaints set ${query} where complaint_id=$${count} returning *`,[...values,complaint_id])
+        const result=await pool.query(`update complaints set ${query} where complaint_id=$${count++} and user_id=$${count} returning *`,[...values,complaint_id,req.user.user_id])
+        if(result.rows.length==0)
+            return res.status(404).json({"msg":"complaint not found"})
         await redis.del(`complaints:${complaint_id}`)
         await redis.del(`complaints:${req.user.branch}`)
         res.status(200).json({"msg":"complaint updated successfully","data":result.rows[0]})
@@ -101,7 +103,9 @@ const deleteComplaint = async (req,res,next)=>{
     if(!complaint_id)
         return next({'status':400,"msg":"complaint_id required!"})
     try{
-        const result =await pool.query("delete from complaints where complaint_id=$1",[complaint_id])
+        const result =await pool.query("delete from complaints where complaint_id=$1 and user_id=$2",[complaint_id,req.user.user_id])
+        if(result.rows.length==0)
+            return res.status(404).json({"msg":"complaint not found"})
         await redis.del(`complaints:${req.user.branch}`)
         if(await redis.exists(`complaints:${complaint_id}`)==1)
             await redis.del(`complaints:${complaint_id}`)
