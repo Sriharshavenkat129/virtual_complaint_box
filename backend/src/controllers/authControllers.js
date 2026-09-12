@@ -69,4 +69,26 @@ const regsiterHod = async (req, res, next) => {
     }
 }
 
-module.exports = { login, register, regsiterHod }
+const resetPassword = async (req,res,next)=>{
+    const {oldPassword,newPassword} = req.body
+    if(!oldPassword)
+        return next({"status":400,"msg":"old password required!"})
+    if(!newPassword || newPassword.length<8)
+        return next({"status":400,"msg":"password atleast must have length 8"})
+    try{
+        const result = await pool.query("select password from users where user_id=$1",[req.user.user_id])
+        if(result.rows.length==0)
+            return next({"staus":404,"msg":"user not found!"})
+        const isMatch = await bcrypt.compare(oldPassword,result.rows[0].password)
+        if(!isMatch)
+            return next({"status":401,"msg":"incorrect password"})
+        const pass=await bcrypt.hash(newPassword,10)
+        await pool.query("update users set password=$1 where user_id=$2",[pass,req.user.user_id])
+        res.status(200).json({"msg":"password updated successfully!"}) 
+    }
+    catch(error){
+        return next({"status":500,"msg":"Internal setver issue"})
+    }
+}
+
+module.exports = { login, register, regsiterHod , resetPassword }

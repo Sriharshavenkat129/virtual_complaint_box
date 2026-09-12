@@ -1,12 +1,13 @@
 const router=require('express').Router()
-const {auth,adminAuth} = require("../middlewares/authMiddleware") 
+const {auth,adminAuth,hodAuth} = require("../middlewares/authMiddleware") 
 const {registerSchema , registerHodSchema} = require('../models/userSchema')
 const validate = require('../middlewares/schemaValidator')
 const {login,register,regsiterHod} = require("../controllers/authControllers")
+const {authLimiter} = require('../middlewares/rateLimiters')
 
-router.post("/login",login)
+router.post("/login",authLimiter,login)
 
-router.post("/register",validate(registerSchema),auth,adminAuth,register)
+router.post("/register",validate(registerSchema),auth,hodAuth,register)
 
 router.post("/registerhod",validate(registerHodSchema),auth,adminAuth,regsiterHod)
 
