@@ -38,4 +38,9 @@ const getLoginId=(login_id)=>{
     .digest('hex')
 }
 
+const id=encryptor('23ME1A5413')
+const d=decryptor(id)
+console.log(id)
+console.log(d)
+
 module.exports={encryptor,decryptor,getLoginId}
